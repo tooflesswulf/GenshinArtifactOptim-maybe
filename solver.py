@@ -24,6 +24,7 @@ class CumSolver:
         raise NotImplemented
 
 
+# O(N) runtime
 class Top1(CumSolver):
     top1 = stats.Loadout()
 
@@ -39,7 +40,7 @@ class Top1(CumSolver):
             nl = self.top1
         return nl.dmg
 
-
+# O(N) runtime
 class Top2(CumSolver):
     top1 = stats.Loadout()
     top2 = stats.Loadout()
@@ -54,7 +55,7 @@ class Top2(CumSolver):
         self.top1, self.top2 = sorted([prop1, prop2, self.top1, self.top2], reverse=True)[:2]
         return self.top1.dmg
 
-
+# O(N^2) runtime
 class TopPerc(CumSolver):
     def __init__(self, *args, perc=0.8):
         super().__init__(*args)
@@ -93,7 +94,7 @@ class TopPerc(CumSolver):
 
         return self.loadouts[0].dmg
 
-
+# O(N^5) runtime
 class BruteForce(CumSolver):
     def __init__(self, *args):
         super().__init__(*args)
