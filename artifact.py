@@ -51,7 +51,7 @@ class Artifact:
     preroll: Tuple[int]
 
     def tostat(self):
-        s = np.zeros(len(statnames), dtype=int)
+        s = np.zeros(len(statnames))
         s[self.main_stat] = main_vals[statnames[self.main_stat]]
         s[np.array(self.subs)] += self.subvals
         return char.Stats(s)
