@@ -65,10 +65,7 @@ if __name__ == '__main__':
     diluc_stats = stats.Stats(np.array(diluc, dtype=np.float32))
     formula = sum([damage.DilucN1(i) for i in range(4)])
 
-    slv = solver.Top1(diluc_stats, formula)
+    slv = solver.TopPerc(diluc_stats, formula)
 
-    # a = slv.step()
-    # b = slv.step()
-
-    vss = np.array([slv.step() for _ in range(2000)])
-    print(vss)
+    for _ in range(20):
+        slv.step()

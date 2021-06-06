@@ -10,11 +10,13 @@ class CumSolver:
         self.cur_dmg = self.c.eval()
         self.i = 0
 
-    def step(self):
+    def step(self, next_arti=None):
+        if next_arti is None:
+            next_arti = artifact.make_arti()
+        self.artis.append(next_arti)
+        max_dmg = self.solve(next_arti)
+
         self.i += 1
-        a = artifact.make_arti()
-        self.artis.append(a)
-        max_dmg = self.solve(a)
         self.cur_dmg = max_dmg
         return max_dmg
     
@@ -53,6 +55,45 @@ class Top2(CumSolver):
         return self.top1.dmg
 
 
+class TopPerc(CumSolver):
+    def __init__(self, *args, perc=0.8):
+        super().__init__(*args)
+
+        self.p = perc
+        self.loadouts = [self.c.artis]
+
+        # Tracks when each config was added
+        self.history = []
+        # tracks self.combos wrt iteration number. Sorted by dmg.
+        self.history_full = []
+    
+    def solve(self, a):
+        remove_nones = False
+
+        to_try = set()
+        for loadout in self.loadouts:
+            to_add = loadout.add(a)
+            to_try.add(to_add)
+            if loadout.artis[a.slot] is None:
+                remove_nones = True
+
+        self.history.append(to_try)
+
+        for l in to_try:
+            self.c.eval(l)
+        
+        to_add = sorted(to_try, reverse=True)
+        if remove_nones:
+            self.loadouts = to_add
+        else:
+            replace = sorted(to_add + self.loadouts, reverse=True)
+            maxi = replace[0].dmg
+            self.loadouts = [r for r in replace if r.dmg > self.p*maxi]
+        self.history_full.append(self.loadouts.copy())
+
+        return self.loadouts[0].dmg
+
+
 class BruteForce(CumSolver):
     def __init__(self, *args):
         super().__init__(*args)
@@ -60,7 +101,7 @@ class BruteForce(CumSolver):
 
         # Tracks when each config was added
         self.history = []
-        # tracks self.combos wrt iteration number
+        # tracks self.combos wrt iteration number. Sorted by dmg.
         self.history_full = []
 
         # Tracks which prior config (v) leads to config (k)
@@ -80,7 +121,7 @@ class BruteForce(CumSolver):
             to_try.add(to_add)
             if loadout.artis[a.slot] is None:
                 remove_nones = True
-        self.history.append(to_try)
+        self.history.append(to_try.copy())
         
         newmax = max([self.c.eval(l) for l in to_try])
 
@@ -88,6 +129,6 @@ class BruteForce(CumSolver):
             self.combos = to_try
         else:
             self.combos |= to_try
-        self.history_full.append(self.combos)
+        self.history_full.append(sorted(self.combos, reverse=True))
 
         return max(newmax, self.cur_dmg)
