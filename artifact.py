@@ -3,7 +3,6 @@ from typing import Tuple
 import numpy as np
 import random
 
-import char
 from common import slotnames, statnames, statmap
 from sampler import StatSampler
 
@@ -51,10 +50,11 @@ class Artifact:
     preroll: Tuple[int]
 
     def tostat(self):
+        import stats
         s = np.zeros(len(statnames))
         s[self.main_stat] = main_vals[statnames[self.main_stat]]
         s[np.array(self.subs)] += self.subvals
-        return char.Stats(s)
+        return stats.Stats(s)
 
     def __add__(self, other):
         if isinstance(other, Artifact):
