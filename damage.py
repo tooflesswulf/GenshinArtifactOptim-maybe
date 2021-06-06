@@ -65,3 +65,25 @@ class DilucN1(DamageFormula):
 
         dmg = self.m * s_atk * (1+elem)
         return dmg * (1 + s_cr * s_cd)
+
+class DionaCharged(DamageFormula):
+    def __init__(self, weak_prob=.5):
+        self.p_weak = weak_prob
+
+    def eval(self, stats=None):
+        if stats is None:
+            stats = self.stats
+        assert stats is not None, 'Please give me stats!'
+
+        s_atk = stats[statmap['ATK']]
+        s_cr = stats[statmap['CR']]
+        s_cd = stats[statmap['CD']]
+        s_cryo = stats[statmap['Cryo']]
+
+        weakpoint_prob = self.p_weak
+        wk_bonus = 1.48
+        bolide = 1.4
+        dmg = 2.11 * s_atk * (1+s_cryo) * bolide
+        no_weak = dmg * (1 + s_cr * s_cd)
+        weak = dmg * wk_bonus * (1 + s_cd)
+        return weakpoint_prob*weak + (1-weakpoint_prob)*no_weak
