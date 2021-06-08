@@ -1,12 +1,6 @@
 from common import statnames, statmap
 
 class DamageFormula:
-    def __init__(self):
-        self.stats = None
-    
-    def set_stats(self, stats):
-        self.stats = stats
-    
     def eval(self, stats=None) -> float:
         raise NotImplemented
     
@@ -42,39 +36,43 @@ class SumDamage(DamageFormula):
         return self
 
 
-class DilucN1(DamageFormula):
-    # Normal multipliers, C6
-    def __init__(self, i, q_infuse=False):
-        mults = [1.3, 1.27, 1.44, 1.95]
-        self.m = mults[i]
-        self.q = q_infuse
-        super().__init__()
-
-    def eval(self, stats=None):
-        if stats is None:
-            stats = self.stats
-        assert stats is not None, 'Please give me stats!'
-
+class NormalDmg(DamageFormula):
+    def __init__(self, mult=0, elem='Phys'):
+        self.m = mult
+        self.elem = statmap[elem]
+    
+    def eval(self, stats):
         s_atk = stats[statmap['ATK']]
         s_cr = stats[statmap['CR']]
         s_cd = stats[statmap['CD']]
-        s_phys = stats[statmap['Phys']]
-        s_pyro = stats[statmap['Pyro']]
+        s_ele = stats[self.elem]
 
-        elem = s_pyro if self.q else s_phys
-
-        dmg = self.m * s_atk * (1+elem)
+        dmg = self.m * s_atk * (1+s_ele)
         return dmg * (1 + s_cr * s_cd)
+
+
+class DilucN(NormalDmg):
+    # Normal multipliers, C6
+    def __init__(self, i, q_infuse=False):
+        mults = [1.3, 1.27, 1.44, 1.95]
+
+        el = 'Pyro' if q_infuse else 'Phys'
+        super().__init__(mults[i], el)
+
+class DilucQ(NormalDmg):
+    def __init__(self):
+        super().__init__(mult=2.86, elem='Pyro')
+
+class DilucE(NormalDmg):
+    def __init__(self, i):
+        mults = [1.32, 1.37, 1.80]
+        super().__init__(mults[i], 'Pyro')
 
 class DionaCharged(DamageFormula):
     def __init__(self, weak_prob=.5):
         self.p_weak = weak_prob
 
     def eval(self, stats=None):
-        if stats is None:
-            stats = self.stats
-        assert stats is not None, 'Please give me stats!'
-
         s_atk = stats[statmap['ATK']]
         s_cr = stats[statmap['CR']]
         s_cd = stats[statmap['CD']]
