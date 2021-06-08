@@ -51,6 +51,20 @@ class NormalDmg(DamageFormula):
         return dmg * (1 + s_cr * s_cd)
 
 
+class MultRxn(DamageFormula):
+    def __init__(self, mult_formula, mult=1.5):
+        self.m = mult
+        self.f = mult_formula
+    
+    def eval(self, stats):
+        s_em = stats[statmap['EM']]
+
+        mult_bonus = self.m * 2.78 * s_em / (1400 + s_em)
+        mult = self.m * (1 + mult_bonus)
+        return self.f.eval(stats) * mult
+
+
+
 class DilucN(NormalDmg):
     # Normal multipliers, C6
     def __init__(self, i, q_infuse=False):
