@@ -1,4 +1,5 @@
 from common import statnames, statmap
+import stats
 
 class DamageFormula:
     def eval(self, stats=None) -> float:
@@ -49,6 +50,21 @@ class NormalDmg(DamageFormula):
 
         dmg = self.m * s_atk * (1+s_ele)
         return dmg * (1 + s_cr * s_cd)
+
+
+class StatBuff(DamageFormula):
+    def __init__(self, formula, stat=None, val=0):
+        self.f = formula
+        self.to_buff = stat
+        self.v = val
+    
+    def eval(self, stats_eval):
+        buffed = stats.Stats(stats_eval)
+        buffed[self.to_buff] += self.v
+
+        return self.f.eval(buffed)
+
+
 
 
 class MultRxn(DamageFormula):
