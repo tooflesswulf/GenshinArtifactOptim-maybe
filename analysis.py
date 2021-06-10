@@ -18,7 +18,10 @@ class ArtifactNB(dict):
             return True
         
         return {k: self[k] for k in self.keys() if matches(k)}
-
+    
+    def summarize(self, a, incl):
+        raise NotImplemented
+    
 class MainstatNB(ArtifactNB):
     def summarize(self, a, incl):
         self[(a.slot, a.main_stat, incl)] += 1
