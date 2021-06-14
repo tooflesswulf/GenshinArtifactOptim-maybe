@@ -125,3 +125,56 @@ class ArtifactFactory:
 def make_arti():
     a = ArtifactFactory()
     return Artifact(a.slot, a.main_stat, a.subs, a.subvals, a.preroll)
+
+
+# Generates neighbors list, since its all symmetric. Done to speed up get_neighbors() in future.
+neighbors = []
+for slot in range(5):
+    ns = []
+    for mv in map(statmap.__getitem__, mainstat[slot].k):
+        ns.append(('mainstat', mv))
+    
+    svs = []
+    for a in range(6):
+        for b in range(6-a):
+            for c in range(6-a-b):
+                svs.append((a, b, c, 5-a-b-c))
+    for sub in map(statmap.__getitem__, substat.k):
+        for i in range(4):
+            sub_repl = (i, sub)
+            for sv in svs:
+                ns.append(('substat', (sub_repl, sv)))
+    neighbors.append(ns)
+    
+
+# SA artifact. Implements a transition function.
+# Three types of transitions:
+#  - Main stat becomes `ms` ('mainstat', ms)         
+#  - ith sub deleted, replaced by `sv` and new subval distr
+#        ('substat', [(i, sv), (a, b, c, d)])
+class SArti(Artifact):
+    def get_neighbors(self):
+        ns = neighbors[self.slot]
+        ixs = list(range(len(ns)))
+        random.shuffle(ixs)
+        for i in ixs:
+            a = ns[i]
+            # if a[0] == 'mainstat' and a[1] == self.main_stat: continue
+            # if a[0] == 'substat' and a[1][1] in self.subs: continue
+
+            if a[0] == 'mainstat':
+                new_ms = a[1]
+                if new_ms == self.main_stat: continue
+                yield SArti(self.slot, new_ms, self.subs, self.subvals, self.preroll)
+            
+            elif a[0] == 'substat':
+                (i, sv), new_rolls = a[1]
+                if sv in self.subs and self.subs[i] != sv: continue
+                new_subs = list(self.subs) + [sv]
+                del new_subs[i]
+                new_subs = tuple(sorted(new_subs))
+
+                pr = [sub_roll_vals[statnames[s]][-1] for s in new_subs]
+                new_svals = [sub_roll_vals[statnames[s]][-1] * (r+1) for s, r in zip(new_subs, new_rolls)]
+
+                yield SArti(self.slot, self.main_stat, new_subs, new_svals, pr)
