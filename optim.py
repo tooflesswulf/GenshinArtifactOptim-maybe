@@ -23,7 +23,7 @@ class SALoadout(stats.Loadout):
 
 
 class Annealer:
-    def __init__(self, char, t0=1, sched=None, s0=None):
+    def __init__(self, char, kb=10, sched=None, s0=None):
         di = char.eval(stats.Loadout())
         self.norm = 1/di
 
@@ -31,23 +31,22 @@ class Annealer:
             s0 = SALoadout(artis=tuple([make_max_arti(i) for i in range(5)]))
         self.s = s0
         self.c = char
-        self.t0 = t0
         self.stepnum = 0
         self.visits = 0
 
-        self.kb = 10
+        self.kb = kb
 
         if sched is None:
             sched = lambda x: 1/x
 
         self.sched = lambda x: 1 if x == 0 else sched(x)
     
-    def fermi_dirac_distr(self, E, T):
+    def fermi_dirac(self, E, T):
         p = 1 / (np.exp(-E / self.kb / T) + 1)
         return p
 
     def step(self):
-        temp = self.t0 * self.sched(self.stepnum)
+        temp = self.sched(self.stepnum)
         self.stepnum += 1
 
         d0 = self.c.eval(self.s)
@@ -57,7 +56,7 @@ class Annealer:
             self.visits += 1
             dmg = self.c.eval(neigh)
             e = self.norm * (dmg - d0)
-            p = self.fermi_dirac_distr(e, temp)
+            p = self.fermi_dirac(e, temp)
             # print(e, p, temp)
             if random.random() > p:
                 cach.append((dmg, p, neigh))
