@@ -30,13 +30,10 @@ class Top1(CumSolver):
 
     def solve(self, a):
         nl = self.top1.add(a)
-        self.c.equip(nl)
-
-        new_dmg = self.c.eval()
+        new_dmg = self.c.eval(nl)
         if new_dmg > self.cur_dmg:
             self.top1 = nl
         else:
-            self.c.equip(self.top1)
             nl = self.top1
         return nl.dmg
 

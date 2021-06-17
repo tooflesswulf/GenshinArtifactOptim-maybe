@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import total_ordering
-from typing import Tuple
+from typing import Tuple, Dict
 import numpy as np
 
 from common import statnames, statmap
@@ -48,8 +48,9 @@ class Stats:
 @dataclass
 @total_ordering
 class Loadout:
-    dmg: int = -1
     artis: Tuple[artifact.Artifact] = tuple([None for _ in range(5)])  # list of artifacts
+    # dmgCache: Dict[int, float] = field(default_factory=dict)
+    dmg: int = -1
 
     def _bake(self):
         s = Stats()

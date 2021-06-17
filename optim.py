@@ -1,25 +1,80 @@
 import random
+import numpy as np
+from typing import Tuple
 
 import artifact
+import stats
 from common import statnames, statmap, slotnames
 
+class SALoadout(stats.Loadout):
+    artis: Tuple[artifact.SArti] = ()
+    def get_neighbors(self):
+        iters = [a.get_neighbors() for a in self.artis]
+
+        while len(iters) > 0:
+            i = random.randint(0, len(iters) - 1)
+            try:
+                ch_arti = next(iters[i])
+                ret = self.add(ch_arti)
+                yield SALoadout(artis=ret.artis)
+            except StopIteration:
+                del iters[i]
+                continue
+
+
 class Annealer:
-    def __init__(self, t0, sched=None, s0=None):
+    def __init__(self, char, t0=1, sched=None, s0=None):
+        di = char.eval(stats.Loadout())
+        self.norm = 1/di
+
         if s0 is None:
-            s0 = [make_max_arti(i) for i in range(5)]
-        self.s0 = s0
+            s0 = SALoadout(artis=tuple([make_max_arti(i) for i in range(5)]))
+        self.s = s0
+        self.c = char
         self.t0 = t0
-        self.t = t0
         self.stepnum = 0
+        self.visits = 0
+
+        self.kb = 10
 
         if sched is None:
-            self.sched = lambda x: 1/x
+            sched = lambda x: 1/x
+
         self.sched = lambda x: 1 if x == 0 else sched(x)
+    
+    def fermi_dirac_distr(self, E, T):
+        p = 1 / (np.exp(-E / self.kb / T) + 1)
+        return p
 
     def step(self):
-        self.t = self.t0 * self.sched(self.stepnum)
+        temp = self.t0 * self.sched(self.stepnum)
         self.stepnum += 1
-    
+
+        d0 = self.c.eval(self.s)
+
+        cach = []
+        for neigh in self.s.get_neighbors():
+            self.visits += 1
+            dmg = self.c.eval(neigh)
+            e = self.norm * (dmg - d0)
+            p = self.fermi_dirac_distr(e, temp)
+            # print(e, p, temp)
+            if random.random() > p:
+                cach.append((dmg, p, neigh))
+                continue
+            self.s = neigh
+            return dmg
+        
+        psel = []
+        for _, p, _ in cach:
+            psel.append(p)
+        psel = np.array(psel) / np.sum(psel)
+        ret_ix = np.random.choice(len(psel), p=psel)
+        ret, _, nxt_s = psel[ret_ix]
+        self.s = nxt_s
+        print('Exhausted options. Probably near opt now')
+        return ret
+        
 
 
 
@@ -42,8 +97,3 @@ def make_max_arti(slot=None):
 
     subs = tuple(sorted(map(statmap.__getitem__, subs)))
     return artifact.SArti(slot, ms, subs, tuple(subvals), tuple(preroll))
-
-if __name__ == '__main__':
-    z = make_max_arti()
-    for b in z.get_neighbors():
-        print(b)

@@ -169,6 +169,7 @@ class SArti(Artifact):
             
             elif a[0] == 'substat':
                 (i, sv), new_rolls = a[1]
+                if sv == self.main_stat: continue
                 if sv in self.subs and self.subs[i] != sv: continue
                 new_subs = list(self.subs) + [sv]
                 del new_subs[i]

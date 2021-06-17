@@ -40,7 +40,8 @@ class Character:
         self.equip(artifacts)
         stats = self._bake_stats()
         dmg = self.formula.eval(stats)
-        self.artis.dmg = dmg #  Cache the dmg
+        self.artis.dmg = dmg
+        # self.artis.dmgCache[0] = dmg #  Cache the dmg. TODO: hashable formula
         return dmg
     
     def equip(self, arti: Union[stats.Loadout, artifact.Artifact]):
