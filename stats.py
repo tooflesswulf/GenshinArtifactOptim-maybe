@@ -50,13 +50,14 @@ class Stats:
 class Loadout:
     artis: Tuple[artifact.Artifact] = tuple([None for _ in range(5)])  # list of artifacts
     # dmgCache: Dict[int, float] = field(default_factory=dict)
-    dmg: int = -1
+    # dmg: int = -1
 
     def _bake(self):
-        s = Stats()
-        for a in self.artis:
-            s += a
-        return s
+        return sum(self.artis, start=Stats())
+        # s = Stats()
+        # for a in self.artis:
+        #     s += a
+        # return s
 
     def add(self, a):
         if a is None:

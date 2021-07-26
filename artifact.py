@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple
 import numpy as np
 import random
@@ -48,6 +48,7 @@ class Artifact:
     subs:    Tuple[int]  # Fixed length tuples (4), collection of 14 integers.
     subvals: Tuple[int]
     preroll: Tuple[int]
+    _stats: field(init=False, hash=False, compare=False)
 
     def tostat(self):
         import stats

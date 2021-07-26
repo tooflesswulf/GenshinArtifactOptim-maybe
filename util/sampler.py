@@ -11,12 +11,12 @@ class StatSampler:
             self.rm_ptrs = {}
     
     def __call__(self):
+        return self.get()
+    
+    def get(self):
         sel = np.random.randint(self.cum[-1])
         ix = np.argmax(self.cum > sel)
         return self.k[ix]
-    
-    def get(self):
-        return self()
     
     # Removes a key, returning a new Sampler object w/o that key.
     def remove(self, key, prop_rm=False):        

@@ -22,6 +22,17 @@ class SALoadout(stats.Loadout):
                 continue
 
 
+# TODO: same as above, but pool the substats.
+class SALoadout2():
+    mainstats: Tuple[int] = (None, None, None, None, None)
+    substats: Tuple[int]
+    def get_neighbors(self):
+        pass
+    
+    def _bake(self):
+        return 0
+
+
 class Annealer:
     def __init__(self, char, kb=10, sched=None, s0=None):
         di = char.eval(stats.Loadout())
