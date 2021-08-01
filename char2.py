@@ -10,7 +10,7 @@ import artifact2
 @total_ordering
 class Loadout:
     artis: Tuple[artifact2.Artifact] = tuple([None for _ in range(5)])  # list of artifacts
-    dmg: float = 0
+    dmg: float = -1
 
     def __init__(self, artis=None):
         if artis is not None:
@@ -70,6 +70,8 @@ class Character:
 
     def eval(self, artifacts=None):
         self.equip(artifacts)
+        if self.artis.dmg > 0:
+            return self.artis.dmg
         stats = self._bake_stats()
         dmg = self.formula.eval(stats)
         self.artis.dmg = dmg
