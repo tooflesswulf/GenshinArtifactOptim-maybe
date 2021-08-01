@@ -45,9 +45,9 @@ class Loadout:
 
 stat2ix = lambda l: list(map(statmap.__getitem__, l))
 class Character:
-    flat = stat2ix(['HP',  'ATK',  'DEF'])
-    perc = stat2ix(['HP%', 'ATK%', 'DEF%'])
-    unscaled = stat2ix(['HP', 'ATK', 'DEF', 'ER', 'EM'])
+    # flat = stat2ix(['HP',  'ATK',  'DEF'])
+    # perc = stat2ix(['HP%', 'ATK%', 'DEF%'])
+    # unscaled = stat2ix(['HP', 'ATK', 'DEF', 'ER', 'EM'])
     
     def __init__(self, basestats, dmgformula):
         self.base = basestats
@@ -56,17 +56,21 @@ class Character:
     
     def _bake_stats(self):
         arti_stats = self.artis._bake()
-        newstats = (self.base + arti_stats) / 1000
-        for s in Character.unscaled:
-            newstats[s] *= 1000
+        newstats = self.base + arti_stats
+        newstats[statmap['CR']] = np.clip(newstats[statmap['CR']], 0, 1000)
+        return newstats
 
-        # Handle HP/ATK/DEF% increase
-        for f, p in zip(Character.flat, Character.perc):
-            newstats[f] += self.base[f] * newstats[p]
+        # newstats = (self.base + arti_stats) / 1000
+        # for s in Character.unscaled:
+        #     newstats[s] *= 1000
+
+        # # Handle HP/ATK/DEF% increase
+        # for f, p in zip(Character.flat, Character.perc):
+        #     newstats[f] += self.base[f] * newstats[p]
 
         # Handle crit
-        newstats[statmap['CR']] = np.clip(newstats[statmap['CR']], 0, 1)
-        return newstats
+        # newstats[statmap['CR']] = np.clip(newstats[statmap['CR']], 0, 1)
+        # return newstats
 
     def eval(self, artifacts=None):
         self.equip(artifacts)

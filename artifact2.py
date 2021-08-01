@@ -29,7 +29,7 @@ main_vals = {
 }
 sub_vals = {
     'HP': 299.75, 'ATK': 19.45, 'DEF': 23.15, 'HP%': 58.3, 'ATK%': 58.3, 'DEF%': 72.9,
-    'EM': 23.31, 'ER': 6.48, 'CR': .0389, 'CD': .0777
+    'EM': 23.31, 'ER': 6.48, 'CR': 38.9, 'CD': 77.7
 }
 
 @dataclass(order=True, frozen=True)
