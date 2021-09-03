@@ -46,7 +46,7 @@ def prob(distr, subs, depth=0):
         pz = prob(dnext, nxtsub, depth+1)
         pps.append(p * pz)
     
-    return sum(pps, start=Frac(0,1)) # not implemented
+    return sum(pps, start=Frac(0,1))
 
 import itertools
 import sys
@@ -56,14 +56,20 @@ if len(sys.argv) > 1:
 else:
     mainstat = None
 
-ss = substat
-if mainstat is not None:
-    ss = substat.remove(mainstat)
-keys = substat.k
-for kk in itertools.combinations(keys, 4):
-    sel = set(kk)
-    # print(sel)
-    print(f'={prob(ss, sel)}')
+# feather
+mainstat = 'ATK'
+ss = substat.remove('ATK')
+subs = {'CD'}
+print(f'P(CD|ms=ATK) = {prob(ss, subs)}')
+
+# ss = substat
+# if mainstat is not None:
+#     ss = substat.remove(mainstat)
+# keys = substat.k
+# for kk in itertools.combinations(keys, 4):
+#     sel = set(kk)
+#     # print(sel)
+#     print(f'={prob(ss, sel)}')
 
 
 # for ms in ['HP', 'DEF', 'ATK', 'HP%', 'DEF%', 'ATK%', 'ER', 'EM', 'CR', 'CD']:
