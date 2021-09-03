@@ -1,10 +1,10 @@
 # GenshinArtifactOptim-maybe
-This project is kinda a mess.
+This project is kinda a mess. I got some optimization stuff here too, but uhh not ready for review yet. For now just showing artifact generation simulator `sim_arti_prob.py` and P({substat}) calculator (`arti_sub_probs.py`)
 
 ## Python Deps
 `pip install numpy pandas`
 
-## Running simulator
+### Running simulator
 You can run `sim_arti_prob.py` to get the total probability of some criteria being fulfilled. Edit the file directly to try different configurations.
 
 Top of the file `sim_arti_prob.py` contains this block:
@@ -33,5 +33,25 @@ Feath @ ATK
 
 P = 0.00112
 ```
+
+### Substat probability calculator
+File: `arti_sub_probs.py` will calculate probability of some subs given a main stat. This time the config is at the bottom of the file.
+```python
+# feather
+mainstat = 'ATK'
+subs = {'CD'}
+
+ss = substat.remove(mainstat)
+print(f'P(CD|ms=ATK) = {prob(ss, subs)}')
+```
+
+- Specify whatever main stat
+- specify what subs you want in the set (e.g. `{'ATK%', 'EM'}` for ATK% AND EM)
+
+Next two lines actually run the code, giving the probability at the end as a rational fraction. You have to divide the numbers yourself lol.
+
+The commented section is what I used to generate my excel sheet (lmao)
+
+
 
 
