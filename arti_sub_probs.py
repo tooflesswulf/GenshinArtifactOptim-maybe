@@ -58,8 +58,9 @@ else:
 
 # feather
 mainstat = 'ATK'
-ss = substat.remove('ATK')
 subs = {'CD'}
+
+ss = substat.remove(mainstat)
 print(f'P(CD|ms=ATK) = {prob(ss, subs)}')
 
 # ss = substat

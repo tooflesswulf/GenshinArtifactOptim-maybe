@@ -3,12 +3,12 @@ import util.common as c
 import math
 
 # Target information
-N = 1_000_00
+N = 1_000_000
 arti_slot = 1  # Feather
 mainstat = c.statmap['ATK']
 subtargs = {
     'CD': 20.2,
-    'DEF': 42
+    'EM': 42
 }
 
 print(f'{c.slotnames[arti_slot]} @ {c.statnames[mainstat]}')
@@ -58,4 +58,4 @@ def sim(n=1_000_000, pred=predicate, return_artis=False):
 if __name__ == '__main__':
     print('\n')
     pp = sim(n=N)
-    print(f'P = {pp}')
+    print(f'P = {pp:.10f} (+/-{math.sqrt(pp*(1-pp))/N})')
