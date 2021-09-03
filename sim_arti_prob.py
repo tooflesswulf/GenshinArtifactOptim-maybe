@@ -1,17 +1,24 @@
 import artifact2
 import util.common as c
-import numpy as np
+import math
 
 # Target information
+N = 1_000_00
 arti_slot = 1  # Feather
 mainstat = c.statmap['ATK']
 subtargs = {
-    'CD': 26  # CD >= 20.2%
+    'CD': 20.2,
+    'DEF': 42
 }
 
 print(f'{c.slotnames[arti_slot]} @ {c.statnames[mainstat]}')
 for k,v in subtargs.items():
-    print(f'{k} >= {v*artifact2.sub_vals[k]/10}')
+    intval = 10*v / artifact2.sub_vals[k]
+    if k in ['ATK%', 'DEF%', 'HP%', 'ER', 'CR', 'CD']:
+        intval *= 10
+
+    subtargs[k] = math.ceil(intval)
+    print(f'- {k} >= {v}')
 
 def predicate(a: artifact2.Artifact):
     if a.slot != arti_slot:
@@ -34,13 +41,14 @@ def sim(n=1_000_000, pred=predicate, return_artis=False):
     artis = []
     for _ in range(n):
         if _ % 100 == 0:
-            print(f'Making {_}/{n}...', end='\r')
+            print(f'Making {_/n*100:.2f}%...', end='\r')
         a = artifact2.make_arti()
         if return_artis:
             artis.append(a)
         if pred(a):
             c += 1
 
+    print()
     if return_artis:
         return c/n, artis
 
@@ -49,4 +57,5 @@ def sim(n=1_000_000, pred=predicate, return_artis=False):
 
 if __name__ == '__main__':
     print('\n')
-    print(sim())
+    pp = sim(n=N)
+    print(f'P = {pp}')
