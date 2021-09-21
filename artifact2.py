@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Tuple
 import numpy as np
 import random
+import itertools
 
 from util.common import slotnames, statnames, statmap
 from util.sampler import StatSampler
@@ -96,6 +97,40 @@ def make_arti(slot=None, sort=True):
     return Artifact(slot=slot, main_stat=main_stat,
             subs=tuple(subs), preroll=tuple(preroll), subvals=tuple(subvals))
 
+keyset = {}
+for i in range(5):
+    for ks in itertools.combinations(sorted(substat.k), i):
+        subsub = substat
+        for k in ks:
+            subsub = subsub.remove(k)
+        keyset[ks] = subsub
+improtant = set(substat.k)
+def make_from_rvec(v, sort=True):
+    slot = int(v[0] * 5) # [0-5] inclusive
+    ms = mainstat[slot].fget(v[1])
+    disc = {ms} if ms in improtant else set()
+    subs = []
+    for i in range(2,2+4):
+        next_sub = keyset[tuple(sorted(disc))].fget(v[i])
+        disc.add(next_sub)
+        subs.append(statmap[next_sub])
+    foursub = v[6] > .8
+    r_pre = int(v[7]*256)
+    preroll = [7+r_pre%4, 7+(r_pre//4)%4, 7+(r_pre//16)%4, 7+(r_pre//64)%4]
+    
+    nroll = 5 if foursub else 4
+    subvals = preroll.copy()
+    for i in range(8, 8+nroll):
+        sbval = int(v[i]*16)
+        subvals[sbval%4] += 7+(sbval//4)%4
+    if not foursub:
+        preroll[-1] = 0
+
+    if sort:
+        paired = sorted(zip(subs, preroll, subvals))
+        subs, preroll, subvals = list(zip(*paired))
+    return Artifact(slot=slot, main_stat=statmap[ms], subs=tuple(subs),
+                    subvals=tuple(subvals), preroll=tuple(preroll))
 
 class ArtifactGenerator:
     def __init__(self) -> None:

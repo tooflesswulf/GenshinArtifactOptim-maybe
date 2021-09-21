@@ -58,4 +58,4 @@ def sim(n=1_000_000, pred=predicate, return_artis=False):
 if __name__ == '__main__':
     print('\n')
     pp = sim(n=N)
-    print(f'P = {pp:.10f} (+/-{math.sqrt(pp*(1-pp))/N})')
+    print(f'P = {pp:.10f} (+/-{math.sqrt(pp*(1-pp)/N)})')

@@ -9,14 +9,22 @@ class StatSampler:
         self.sr = store_rm
         if store_rm:
             self.rm_ptrs = {}
+
+        self.float_weights = self.cum / self.cum[-1]
     
     def __call__(self):
         return self.get()
     
+    def fget(self, flot):
+        return self.k[np.argmax(self.float_weights > flot)]
+
+    def iget(self, iint):
+        return self.k[np.argmax(self.cum > iint)]
+    
     def get(self):
         sel = np.random.randint(self.cum[-1])
-        ix = np.argmax(self.cum > sel)
-        return self.k[ix]
+        # ix = np.argmax(self.cum > sel)
+        return self.iget(sel)
     
     # Removes a key, returning a new Sampler object w/o that key.
     def remove(self, key, prop_rm=False):        
