@@ -124,3 +124,14 @@ class VapeMelt(DamageFormula):
             Hh[i, i] = -mult * 2.78 * 2800 * (div**3)
             return m, gr, Hh
         super().__init__([f])
+
+class DmgBonus(DamageFormula):
+    def __init__(self, elem, bonus=0):
+        def f(stats):
+            i = statmap[elem]
+            bon = stats[i] / 1000
+            gr = np.zeros(len(statnames))
+            gr[i] = 1 / 1000
+            Hh = np.zeros([len(statnames), len(statnames)])
+            return 1 + bon + bonus, gr, Hh
+        super().__init__([f])

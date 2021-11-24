@@ -57,11 +57,32 @@ else:
     mainstat = None
 
 # feather
-mainstat = 'ATK'
-subs = {'CD'}
+mainstat = 'CD'
+subss = [
+    {'DEF', 'HP', 'ATK', 'EM'},
+    {'DEF', 'HP', 'ATK', 'CR'},
+    {'DEF', 'HP', 'ATK%', 'EM'},
+    {'DEF', 'HP', 'ATK%', 'CR'},
+    {'DEF', 'HP', 'CD', 'CR'},
+    {'DEF', 'HP%', 'ATK%', 'EM'},
+    {'DEF', 'HP%', 'ATK%', 'CR'},
+    {'DEF', 'HP%', 'CD', 'CR'},
+    {'DEF%', 'HP%', 'ATK%', 'EM'},
+    {'DEF%', 'HP%', 'ATK%', 'CR'},
+    {'DEF%', 'HP%', 'CD', 'CR'},
+]
 
-ss = substat.remove(mainstat)
-print(f'P(CD|ms=ATK) = {prob(ss, subs)}')
+import artifact2
+def zz(subs):
+    z = [artifact2.substat.distr[s] for s in subs]
+    return tuple(sorted(z))
+
+if mainstat:
+    ss = substat.remove(mainstat)
+else:
+    ss = substat
+for subs in subss:
+    print(f'{zz(subs)}: {prob(ss, subs)},')
 
 # ss = substat
 # if mainstat is not None:
@@ -70,7 +91,7 @@ print(f'P(CD|ms=ATK) = {prob(ss, subs)}')
 # for kk in itertools.combinations(keys, 4):
 #     sel = set(kk)
 #     # print(sel)
-#     print(f'={prob(ss, sel)}')
+#     print(f'{sel}\t={prob(ss, sel)}')
 
 
 # for ms in ['HP', 'DEF', 'ATK', 'HP%', 'DEF%', 'ATK%', 'ER', 'EM', 'CR', 'CD']:
