@@ -6,7 +6,7 @@ import scipy.stats
 import numpy as np
 import libarti_prob
 
-from util.common import statnames, statmap, slotnames
+from util.common import statnames, statmap, slotnames, slotmap
 import artifact2
 import damage2
 
@@ -82,17 +82,6 @@ class QueryHandle:
         # TODO: handle set bonus and other conditionals
         return ret
 
-    def _resolve_lpd(self, lpd, E=False):
-        if E:
-            ptot, dtot = 0, 0
-            for l, (p, d) in lpd:
-                ptot += l*p
-                dtot += l*p*d
-            if np.isclose(ptot, 0):
-                return 0, 0
-            return ptot, dtot/ptot
-        return np.sum(np.prod(lpd, axis=1))
-
     def linearize(self, subs: Tuple[artifact2.ISubstat], rolls=5):
         if self.query is None:
             raise RuntimeError('Need a query first!')
@@ -121,7 +110,18 @@ class QueryHandle:
         mu, var = coeff2normal(m, N=a.rolls_left, b=0)
         return prob_gt(self.dmg0 - c, mu, var)
 
-    def eval_sub(self, subs, p3sub=.8, E=False):
+    def _resolve_lpd(self, lpd, E=False):
+        if E:
+            ptot, dtot = 0, 0
+            for l, (p, d) in lpd:
+                ptot += l*p
+                dtot += l*p*d
+            if np.isclose(ptot, 0):
+                return 0, 0
+            return ptot, dtot/ptot
+        return np.sum(np.prod(lpd, axis=1))
+
+    def eval_sub(self, subs: Tuple[artifact2.ISubstat], p3sub=.8, E=False):
         rolls_left = 5 + 4
         c, m = self.linearize(subs, rolls_left)
 
@@ -138,21 +138,24 @@ class QueryHandle:
         lpd.append([1-p3sub, pd(mu4, var4)])
         return self._resolve_lpd(lpd, E)
 
-    # def eval_slot(self, slot, p3sub=.8, fast=True, E=False):
-    #     main_distr = artifact2.mainstat[slot].distr
-    #     main_denom = sum(main_distr.values())
-    #     lpd = []
-    #     for main, v_main in main_distr.items():
-    #         p_main = v_main / main_denom
-    #         self._set_slot(slot, main)
+    def eval_slot(self, slot, setKey=None, p3sub=.8, E=False):
+        if slot in slotnames:
+            slot = slotmap[slot]
+        main_distr = artifact2.mainstat[slot].distr
+        main_denom = sum(main_distr.values())
 
-    #         sub_distr = artifact2.substat
-    #         sub_distr = sub_distr.remove(main)
-    #         for c in itertools.combinations(sub_distr.k, 4):
-    #             prb = p_main * libarti_prob.p_subs(c, main)
-    #             c2 = {cc: 0 for cc in c}
-    #             lpd.append([prb, self.eval_sub(c2, p3sub=p3sub, fast=fast, E=E)])
-    #     return self._resolve_lpd(lpd, E)
+        lpd = []
+        for main, v_main in main_distr.items():
+            p_main = v_main / main_denom
+            self._set_query(artifact2.Artifact(setKey=setKey, slotKey=slotnames[slot], mainStatKey=main))
+
+            sub_distr = artifact2.substat
+            sub_distr = sub_distr.remove(main)
+            for c in itertools.combinations(sub_distr.k, 4):
+                prb = p_main * libarti_prob.p_subs(c, main)
+                c2 = tuple(artifact2.ISubstat(cc, 0) for cc in c)
+                lpd.append([prb, self.eval_sub(c2, p3sub=p3sub, E=E)])
+        return self._resolve_lpd(lpd, E)
 
     # def dmg_per_arti(self, p3sub=.8):
     #     lpd = []
@@ -232,5 +235,7 @@ if __name__ == '__main__':
 
     curr_loadout = [flower, feather, sands, cup, hat]
     qh = QueryHandle(diona_stats, curr_loadout, dmg)
-    print(qh.eval_arti(q1))
-    print(qh.eval_arti(q2))
+    # print(qh.eval_arti(q1))
+    # print(qh.eval_arti(q2))
+
+    print(qh.eval_slot('circlet'))

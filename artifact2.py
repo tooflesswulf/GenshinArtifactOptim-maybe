@@ -22,8 +22,8 @@ class Artifact:
     setKey: SetKey
     slotKey: SlotKey
     mainStatKey: StatKey
-    substats: Tuple[ISubstat]
-    level: int
+    substats: Tuple[ISubstat] = ()
+    level: int = 1
     rarity: int = 5
     lock: bool = False
     location: None = None
