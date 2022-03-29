@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Tuple
 
 from util.common import statnames, statmap
 
@@ -11,10 +12,10 @@ class DamageFormula:
         else:
             self.formulae = funcs
 
-    def eval(self, stats) -> float:
-        dmg = 0
-        grad = 0
-        hess = 0
+    def eval(self, stats) -> Tuple[float, np.ndarray, np.ndarray]:
+        dmg: float = 0
+        grad: np.ndarray = 0
+        hess: np.ndarray = 0
         for f in self.formulae:
             v, g, h = f(stats)
             dmg += v
@@ -62,22 +63,22 @@ class DamageFormula:
 class NormalDmg(DamageFormula):
     def __init__(self, mult=1):
         def f(stats):
-            i1 = statmap['BaseATK']
-            i2 = statmap['ATK']
-            i3 = statmap['ATK%']
+            i1 = statmap['base_atk']
+            i2 = statmap['atk']
+            i3 = statmap['atk_']
 
             batk = stats[i1]
             atk = stats[i2]
             atkp = stats[i3]
-            dmg = batk * (1 + atkp/1000) + atk
+            dmg = batk * (1 + atkp) + atk
 
             gr = np.zeros(len(statnames))
-            gr[i1] = 1 + atkp/1000
+            gr[i1] = 1 + atkp
             gr[i2] = 1
-            gr[i3] = batk / 1000
+            gr[i3] = batk
 
             Hh = np.zeros([len(statnames), len(statnames)])
-            Hh[i1, i3] = Hh[i3, i1] = 1/1000
+            Hh[i1, i3] = Hh[i3, i1] = 1
             return mult * dmg, mult * gr, mult * Hh
 
         super().__init__([f])
@@ -87,11 +88,11 @@ class CritMult(DamageFormula):
     def __init__(self):
         def f(stats):
             # 1 + cr * cd
-            i1 = statmap['CR']
-            i2 = statmap['CD']
+            i1 = statmap['critRate_']
+            i2 = statmap['critDMG_']
 
-            cr = stats[i1] / 1000
-            cd = stats[i2] / 1000
+            cr = stats[i1]
+            cd = stats[i2]
             if cr > 1:
                 mult = 1 + cd
                 gr = np.zeros(len(statnames))
@@ -101,11 +102,11 @@ class CritMult(DamageFormula):
 
             mult = 1 + cr * cd
             gr = np.zeros(len(statnames))
-            gr[i1] = cd / 1000
-            gr[i2] = cr / 1000
+            gr[i1] = cd
+            gr[i2] = cr
 
             Hh = np.zeros([len(statnames), len(statnames)])
-            Hh[i1, i2] = Hh[i2, i1] = 1 / 1000 / 1000
+            Hh[i1, i2] = Hh[i2, i1] = 1
             return mult, gr, Hh
         super().__init__([f])
 
@@ -113,7 +114,7 @@ class CritMult(DamageFormula):
 class VapeMelt(DamageFormula):
     def __init__(self, mult=2, bonus=0):
         def f(stats):
-            i = statmap['EM']
+            i = statmap['eleMas']
             em = stats[i]
 
             div = 1 / (em + 1400)
@@ -129,9 +130,9 @@ class DmgBonus(DamageFormula):
     def __init__(self, elem, bonus=0):
         def f(stats):
             i = statmap[elem]
-            bon = stats[i] / 1000
+            bon = stats[i]
             gr = np.zeros(len(statnames))
-            gr[i] = 1 / 1000
+            gr[i] = 1
             Hh = np.zeros([len(statnames), len(statnames)])
             return 1 + bon + bonus, gr, Hh
         super().__init__([f])

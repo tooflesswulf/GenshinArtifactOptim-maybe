@@ -1,136 +1,122 @@
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Tuple, Iterator
 import numpy as np
 import random
 import itertools
 
-from util.common import slotnames, statnames, statmap
-from util.sampler import StatSampler
+from util.common import slotnames, slotmap, statnames, statmap, mainstat, main_vals, substat, sub_vals, to_stat
+from util.common import SetKey, StatKey, SlotKey
 
-mainstat = (
-    StatSampler({'HP': 1}),
-    StatSampler({'ATK': 1}),
-    StatSampler({'HP%': 80, 'ATK%': 80, 'DEF%': 80, 'EM': 30, 'ER': 30}),
-    StatSampler({'HP%': 85, 'ATK%': 85, 'DEF%': 80, 'EM': 10,
-     'Phys': 20, 'Hydro': 20, 'Pyro': 20, 'Cryo': 20, 'Electro': 20, 'Anemo': 20, 'Geo': 20}),
-    StatSampler({'HP%': 22, 'ATK%': 22, 'DEF%': 22, 'EM': 4, 'CR': 10, 'CD': 10, 'Heal': 10}),
-)
-substat = StatSampler({
-    'HP': 6, 'DEF': 6, 'ATK': 6,
-    'HP%': 4, 'DEF%': 4, 'ATK%': 4, 'ER': 4, 'EM': 4,
-    'CR': 3, 'CD': 3
-})
-main_vals = {
-    'HP': 4780, 'ATK': 311, 'DEF': -1,
-    'HP%': 466, 'ATK%': 466, 'DEF%': 583,
-    'EM': 187, 'ER': 518,
-    'CR': 311, 'CD': 622,
-    'Heal': 359, 'Phys': 583,
-    'Hydro': 466, 'Pyro': 466, 'Cryo': 466, 'Electro': 466, 'Anemo': 466, 'Geo': 466, 'Dendro': 466
-}
-sub_vals = {
-    'HP': 298.75, 'ATK': 19.45, 'DEF': 23.15, 'HP%': 58.3, 'ATK%': 58.3, 'DEF%': 72.9,
-    'EM': 23.31, 'ER': 6.48, 'CR': 38.9, 'CD': 77.7
-}
+
+@dataclass(order=True, frozen=True)
+class ISubstat:
+    key: StatKey
+    value: int
+
+    def __iter__(self) -> Iterator[StatKey|int]:
+        return iter((self.key, self.value))
+
 
 @dataclass(order=True, frozen=True)
 class Artifact:
-    slot: int
-    main_stat: int
-    subs:    Tuple[int]  # Fixed length tuples (4), collection of 14 integers.
-    subvals: Tuple[int]
-    preroll: Tuple[int]
-    _stats: np.ndarray = field(init=False, hash=False, compare=False, default=None)
+    setKey: SetKey
+    slotKey: SlotKey
+    mainStatKey: StatKey
+    substats: Tuple[ISubstat]
+    level: int
+    rarity: int = 5
+    lock: bool = False
+    location: None = None
+    exclude: None = None
+    _stats: np.ndarray = field(
+        init=False, hash=False, compare=False, default=None)
+    rolls_left: int = 5
 
     def __post_init__(self):
+        object.__setattr__(self, 'rolls_left', (23-self.level)//4)
         s = np.zeros(len(statnames))
-        s[self.main_stat] = main_vals[statnames[self.main_stat]]
-        for sub, subv in zip(self.subs, self.subvals):
-            s[sub] += subv/10 * sub_vals[statnames[sub]]
+        # s[self.main_stat] = main_vals[statnames[self.main_stat]]
+        for k, v in self.substats:
+            if k == '':
+                object.__setattr__(self, 'rolls_left', self.rolls_left - 1)
+                continue
+            s[statmap[k]] = v/10 * sub_vals[k]
         object.__setattr__(self, '_stats', s)
 
-    def tostat(self) -> np.ndarray:
-        return self._stats
-
+    def tostat(self, sub_only=False) -> np.ndarray:
+        if sub_only:
+            return self._stats
+        # Imma just assume lvl 20 everything
+        main = to_stat({self.mainStatKey: main_vals[self.mainStatKey]})
+        return self._stats + main
+        
     def __add__(self, other):
         if isinstance(other, Artifact):
             return self.tostat() + other.tostat()
+        if isinstance(other, np.ndarray):
+            return self.tostat() + other
         raise NotImplemented
+    
+    def __radd__(self, other):
+        print(f'ther: {other}')
+        return self + other
 
     def __repr__(self):
-        sub_lst = [f'{statnames[s]}:{vi}>{vf}' for s, vf, vi in zip(self.subs, self.subvals, self.preroll)]
-        sub_str = ', '.join(sub_lst)
-        return f'{statnames[self.main_stat]} {slotnames[self.slot]}@({sub_str})'
+        out = f'LVL{self.level} {self.setKey} {self.slotKey} @ {self.mainStatKey}'
+        for k, v in self.substats:
+            if k == '':
+                continue
+            val_disp = v/10*sub_vals[k]
+            if val_disp < 1:
+                out += f'\n - {val_disp*100:.1f} {k}'
+            else:
+                out += f'\n - {val_disp:.0f} {k}'
+        return out
 
-def make_arti(slot=None, sort=True):
-    # Pick the slot & main stat first
+
+def make_arti(setKey='MaidenBeloved', slot=None, upgrade=True, foursub_prob=.8, sort=True) -> Artifact:
     if slot is None:
         slot = random.choice([0, 1, 2, 3, 4])
-    main_stat = statmap[ mainstat[slot].get() ]
+    slotKey = slot
+    if slot in slotnames:
+        slot = slotmap[slot]
+    else:
+        slotKey = slotnames[slot]
+    main_stat = mainstat[slot].get()
 
     # Pick substats.
-    nodup_distr = substat.remove(statnames[main_stat])
+    nodup_distr = substat.remove(main_stat)
     subs = []
     for _ in range(4):
         ssi = nodup_distr.get()
-        subs.append(statmap[ssi])
+        subs.append(ssi)
         nodup_distr = nodup_distr.remove(ssi)
 
     # Initialize the substats. First upgrade is pulled up to avoid 4-sub logic
-    subvals = [random.choice([7,8,9,10]) for _ in range(4)]
-    foursub = random.random() > .8
-    preroll = subvals.copy()
-    if not foursub: preroll[-1] = 0  # 80% chance for 3 subs
+    subvals = [random.choice([7, 8, 9, 10]) for _ in range(4)]
+    foursub = random.random() > foursub_prob
 
-    # Roll the substats up; add 5 rolls.
-    nroll = 5 if foursub else 4
-    vv = [random.choice([7,8,9,10]) for _ in range(nroll)]
-    dst = [random.choice([0,1,2,3]) for _ in range(nroll)]
-    for i, v in zip(dst, vv):
-        subvals[i] += v
-    
+    if not upgrade:
+        # If not upgrade, then we can generate the artifact now.
+        if not foursub:
+            subs[-1] = ''
+            subvals[-1] = 0
+        lvl = 1
+
+    else:
+        lvl = 20
+        # Otherwise, upgrade the artifact.
+        nroll = 5 if foursub else 4
+        vv = [random.choice([7, 8, 9, 10]) for _ in range(nroll)]
+        dst = [random.choice([0, 1, 2, 3]) for _ in range(nroll)]
+        for i, v in zip(dst, vv):
+            subvals[i] += v
+    paired = zip(subs, subvals)
     if sort:
-        # Sort by sub for nicer printing. ~10% increase in runtime
-        paired = sorted(zip(subs, preroll, subvals))
-        subs, preroll, subvals = list(zip(*paired))
-    
-    return Artifact(slot=slot, main_stat=main_stat,
-            subs=tuple(subs), preroll=tuple(preroll), subvals=tuple(subvals))
+        paired = sorted(zip(subs, subvals))
+    substats = tuple(ISubstat(s, sv) for s, sv in paired)
+    return Artifact(setKey=setKey, slotKey=slotKey, level=lvl, rarity=5, mainStatKey=main_stat, substats=substats)
 
-keyset = {}
-for i in range(5):
-    for ks in itertools.combinations(sorted(substat.k), i):
-        subsub = substat
-        for k in ks:
-            subsub = subsub.remove(k)
-        keyset[ks] = subsub
-improtant = set(substat.k)
-def make_from_rvec(v, sort=True):
-    slot = int(v[0] * 5) # [0-5] inclusive
-    ms = mainstat[slot].fget(v[1])
-    disc = {ms} if ms in improtant else set()
-    subs = []
-    for i in range(2,2+4):
-        next_sub = keyset[tuple(sorted(disc))].fget(v[i])
-        disc.add(next_sub)
-        subs.append(statmap[next_sub])
-    foursub = v[6] > .8
-    r_pre = int(v[7]*256)
-    preroll = [7+r_pre%4, 7+(r_pre//4)%4, 7+(r_pre//16)%4, 7+(r_pre//64)%4]
-    
-    nroll = 5 if foursub else 4
-    subvals = preroll.copy()
-    for i in range(8, 8+nroll):
-        sbval = int(v[i]*16)
-        subvals[sbval%4] += 7+(sbval//4)%4
-    if not foursub:
-        preroll[-1] = 0
-
-    if sort:
-        paired = sorted(zip(subs, preroll, subvals))
-        subs, preroll, subvals = list(zip(*paired))
-    return Artifact(slot=slot, main_stat=statmap[ms], subs=tuple(subs),
-                    subvals=tuple(subvals), preroll=tuple(preroll))
 
 class ArtifactGenerator:
     def __init__(self) -> None:
@@ -139,3 +125,31 @@ class ArtifactGenerator:
     def __iter__(self):
         while True:
             yield make_arti()
+
+
+def cvt_good_isubtat(isub):
+    k, v = isub['key'], isub['value']
+    if k == '':
+        return ISubstat(k, 0)
+
+    int_val = int(np.round(10 * v / sub_vals[k]))
+    # GOOD does x% as 10.3%, I use 0.103
+    if int_val > 650:
+        int_val = int(np.round(int_val / 100))
+    return ISubstat(k, int_val)
+
+# From GOOD object description format (v2)
+def from_good(good_arti):
+    good_arti['substats'] = tuple(map(cvt_good_isubtat, good_arti['substats']))
+    return Artifact(**good_arti)
+
+if __name__ == '__main__':
+    tst = {"setKey": "Thundersoother", "rarity": 5, "level": 1, "slotKey": "flower", "mainStatKey": "hp", "substats": [{"key": "def", "value": 23}, {
+        "key": "atk", "value": 18}, {"key": "critRate_", "value": 3.9}, {"key": "", "value": 0}], "location": "", "exclude": False, "lock": False}
+    a = from_good(tst)
+    print(a)
+    print(a.rolls_left)
+
+    a = make_arti(upgrade=False)
+    print(a)
+    print(a.rolls_left)
