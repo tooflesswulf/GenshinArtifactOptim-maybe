@@ -1,4 +1,4 @@
-import artifact2
+from .definitions import substat
 mu_cache = {
     (8, 1): 3/4,
     (9, 1): 2/4,
@@ -201,34 +201,10 @@ def sigma(ss, n):
     return sig_arr[x + sigr[y]]
 
 def p_subs(vs, main_type):
-    srch_key = tuple(sorted(map(lambda s: artifact2.substat.distr[s], vs)))
-    if main_type not in artifact2.substat.distr:
+    srch_key = tuple(sorted(map(lambda s: substat.distr[s], vs)))
+    if main_type not in substat.distr:
         return prob_subs_summary[0][srch_key]
-    return prob_subs_summary[artifact2.substat.distr[main_type]][srch_key]
-
-def mu_hsh(a, j):
-    offset = -16
-    r = (56, 41, 62, 30, 46, 39, 0, 10, 20, 59)
-    t = 10
-    v = a + 8*j + offset
-    x = v % t
-    y = v // t
-    return x + r[y]
-
-
-def sig_hsh(ks, n):
-    c,d,e = 4,16,13
-    # v = d * max(ks) + n*e
-    # if len(ks) > 1: 
-    v = n*e + sum([w*k for w, k in zip([d,c], ks[::-1])]) + len(ks)
-
-    r = (35, 64, 70, 21, 33, 45, 12, 0, 53, 76, 48, 86)
-    t = 12
-    offset = -14
-    v = v + offset
-    x = v % t
-    y = v // t
-    return x + r[y]
+    return prob_subs_summary[substat.distr[main_type]][srch_key]
 
 if __name__ == '__main__':
     import itertools
@@ -237,7 +213,6 @@ if __name__ == '__main__':
             for n in range(1,6):
                 if sigma_sanity(ks,n) != sigma(ks,n):
                     print(f'Failed at {ks}, {n}')
-
 
     for a in range(80):
         for n in range(6):

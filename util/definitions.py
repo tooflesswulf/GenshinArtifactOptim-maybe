@@ -1,5 +1,5 @@
 import typing
-from typing import Dict, Literal, Tuple
+from typing import Literal
 import numpy as np
 from .sampler import StatSampler
 
@@ -27,9 +27,12 @@ SetKey = Literal["Adventurer", "ArchaicPetra", "Berserker", "BlizzardStrayer",
 StatKey = Literal["hp", "hp_", "atk", "atk_", "def", "def_", "eleMas", "enerRech_",
                   "heal_", "critRate_", "critDMG_", "physical_dmg_", "anemo_dmg_",
                   "geo_dmg_", "electro_dmg_", "hydro_dmg_", "pyro_dmg_", "cryo_dmg_",
-                  'base_hp', 'base_atk', 'base_def']
-statnames: Tuple[str] = typing.get_args(StatKey)
-statmap: Dict[StatKey, int] = {n: i for i, n in enumerate(statnames)}
+                  # Non-standard stats
+                  'base_hp', 'base_atk', 'base_def',
+                  'na_dmg_', 'ca_dmg_', 'skill_dmg_', 'burst_dmg_',
+                  'na_flat', 'ca_flat', 'skill_flat', 'burst_flat']
+statnames: tuple[str] = typing.get_args(StatKey)
+statmap: dict[StatKey, int] = {n: i for i, n in enumerate(statnames)}
 
 SlotKey = Literal["flower", "plume", "sands", "goblet", "circlet"]
 slotnames = typing.get_args(SlotKey)
@@ -51,7 +54,7 @@ substat = StatSampler({
     'hp_': 4, 'def_': 4, 'atk_': 4, 'enerRech_': 4, 'eleMas': 4,
     'critRate_': 3, 'critDMG_': 3
 })
-main_vals: Dict[StatKey, float] = {
+main_vals: dict[StatKey, float] = {
     'hp': 4780, 'atk': 311, 'def': -1,
     'hp_': .466, 'atk_': .466, 'def_': .583,
     'eleMas': 187, 'enerRech_': 518,
@@ -59,7 +62,7 @@ main_vals: Dict[StatKey, float] = {
     'heal_': .359, 'physical_dmg_': .583, 'hydro_dmg_': .466, 'pyro_dmg_': .466,
     'cryo_dmg_': .466, 'electro_dmg_': .466, 'anemo_dmg_': .466, 'geo_dmg_': .466
 }
-sub_vals: Dict[StatKey, float] = {
+sub_vals: dict[StatKey, float] = {
     'hp': 298.75, 'atk': 19.45, 'def': 23.15, 'hp_': .0583, 'atk_': .0583, 'def_': .0729,
     'eleMas': 23.31, 'enerRech_': .0648, 'critRate_': .0389, 'critDMG_': .0777
 }

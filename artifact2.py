@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Tuple, Iterator
+from typing import Iterator
 import numpy as np
 import random
 import itertools
 
-from util.common import slotnames, slotmap, statnames, statmap, mainstat, main_vals, substat, sub_vals, to_stat
-from util.common import SetKey, StatKey, SlotKey
+from util.definitions import slotnames, slotmap, statnames, statmap, mainstat, main_vals, substat, sub_vals, to_stat
+from util.definitions import SetKey, StatKey, SlotKey
 
 
 @dataclass(order=True, frozen=True)
@@ -13,7 +13,7 @@ class ISubstat:
     key: StatKey
     value: int
 
-    def __iter__(self) -> Iterator[StatKey|int]:
+    def __iter__(self) -> Iterator[StatKey | int]:
         return iter((self.key, self.value))
 
 
@@ -22,7 +22,7 @@ class Artifact:
     setKey: SetKey
     slotKey: SlotKey
     mainStatKey: StatKey
-    substats: Tuple[ISubstat] = ()
+    substats: tuple[ISubstat] = ()
     level: int = 1
     rarity: int = 5
     lock: bool = False
@@ -49,20 +49,34 @@ class Artifact:
         # Imma just assume lvl 20 everything
         main = to_stat({self.mainStatKey: main_vals[self.mainStatKey]})
         return self._stats + main
-        
+
     def __add__(self, other):
         if isinstance(other, Artifact):
             return self.tostat() + other.tostat()
         if isinstance(other, np.ndarray):
             return self.tostat() + other
-        raise NotImplemented
-    
+        raise NotImplemented()
+
     def __radd__(self, other):
         print(f'ther: {other}')
         return self + other
 
+    def __str__(self):
+        out = f'LVL{self.level} {self.mainStatKey} {self.slotKey}'
+        for k, v in self.substats:
+            if k == '':
+                continue
+            val_disp = v/10*sub_vals[k]
+            if val_disp < 1:
+                out += f'\n - {val_disp*100:.1f} {k}'
+            else:
+                out += f'\n - {val_disp:.0f} {k}'
+        return out
+
     def __repr__(self):
-        out = f'LVL{self.level} {self.setKey} {self.slotKey} @ {self.mainStatKey}'
+        out = f'LVL{self.level} {self.mainStatKey} {self.setKey} {self.slotKey}'
+        if self.location != '':
+            out += f' @ {self.location}'
         for k, v in self.substats:
             if k == '':
                 continue
@@ -138,10 +152,12 @@ def cvt_good_isubtat(isub):
         int_val = int(np.round(int_val / 100))
     return ISubstat(k, int_val)
 
-# From GOOD object description format (v2)
+
 def from_good(good_arti):
+    # From GOOD object description format (v2)
     good_arti['substats'] = tuple(map(cvt_good_isubtat, good_arti['substats']))
     return Artifact(**good_arti)
+
 
 if __name__ == '__main__':
     tst = {"setKey": "Thundersoother", "rarity": 5, "level": 1, "slotKey": "flower", "mainStatKey": "hp", "substats": [{"key": "def", "value": 23}, {

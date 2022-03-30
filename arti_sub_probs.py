@@ -1,4 +1,4 @@
-from artifact2 import substat
+from util.definitions import substat
 import math
 
 class Frac:
@@ -57,20 +57,20 @@ else:
     mainstat = None
 
 # feather
-mainstat = 'CD'
-subss = [
-    {'DEF', 'HP', 'ATK', 'EM'},
-    {'DEF', 'HP', 'ATK', 'CR'},
-    {'DEF', 'HP', 'ATK%', 'EM'},
-    {'DEF', 'HP', 'ATK%', 'CR'},
-    {'DEF', 'HP', 'CD', 'CR'},
-    {'DEF', 'HP%', 'ATK%', 'EM'},
-    {'DEF', 'HP%', 'ATK%', 'CR'},
-    {'DEF', 'HP%', 'CD', 'CR'},
-    {'DEF%', 'HP%', 'ATK%', 'EM'},
-    {'DEF%', 'HP%', 'ATK%', 'CR'},
-    {'DEF%', 'HP%', 'CD', 'CR'},
-]
+# mainstat = 'CD'
+# subss = [
+#     {'DEF', 'HP', 'ATK', 'EM'},
+#     {'DEF', 'HP', 'ATK', 'CR'},
+#     {'DEF', 'HP', 'ATK%', 'EM'},
+#     {'DEF', 'HP', 'ATK%', 'CR'},
+#     {'DEF', 'HP', 'CD', 'CR'},
+#     {'DEF', 'HP%', 'ATK%', 'EM'},
+#     {'DEF', 'HP%', 'ATK%', 'CR'},
+#     {'DEF', 'HP%', 'CD', 'CR'},
+#     {'DEF%', 'HP%', 'ATK%', 'EM'},
+#     {'DEF%', 'HP%', 'ATK%', 'CR'},
+#     {'DEF%', 'HP%', 'CD', 'CR'},
+# ]
 
 import artifact2
 def zz(subs):

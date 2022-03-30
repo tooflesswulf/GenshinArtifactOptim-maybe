@@ -1,17 +1,17 @@
-from typing import Tuple, List
+from typing import Sequence
 import numpy as np
 import itertools
 import scipy.special
 import scipy.stats
 import numpy as np
-import libarti_prob
+import util.lookup_fns as lookup_fns
 
-from util.common import statnames, statmap, slotnames, slotmap
+from util.definitions import statnames, statmap, slotnames, slotmap
 import artifact2
 import damage2
 
 
-def coeff2normal(ks, N: int = 5, b: int = 1) -> Tuple[float, float]:
+def coeff2normal(ks, N: int = 5, b: int = 1) -> tuple[float, float]:
     # Get Gaussian approximation from Ai coefficients
     ks = np.array(ks)
     n4b = N + 4*b
@@ -58,7 +58,7 @@ def appx_hessian2(H, k=1):
 
 
 class QueryHandle:
-    def __init__(self, char_stats: np.ndarray, artis: List[artifact2.Artifact], dmg: damage2.DamageFormula):
+    def __init__(self, char_stats: np.ndarray, artis: Sequence[artifact2.Artifact], dmg: damage2.DamageFormula):
         self.dmg = dmg
         self.ch = char_stats
         self.a = artis
@@ -82,7 +82,7 @@ class QueryHandle:
         # TODO: handle set bonus and other conditionals
         return ret
 
-    def linearize(self, subs: Tuple[artifact2.ISubstat], rolls=5):
+    def linearize(self, subs: Sequence[artifact2.ISubstat], rolls=5):
         if self.query is None:
             raise RuntimeError('Need a query first!')
         hg_ixs = [statmap[k] for k, v in subs if k != '']
@@ -91,7 +91,7 @@ class QueryHandle:
         #  Currently expanding about upgrade=0
         v, g, h = self.vgh
 
-        scale = np.array([artifact2.sub_vals[k]/10 for k, v in subs])
+        scale = np.array([artifact2.sub_vals[k]/10 for k, v in subs if k != ''])
 
         gnorm = g[hg_ixs] * scale
         hnorm = h[hg_ixs][:, hg_ixs] * np.outer(scale, scale)
@@ -103,15 +103,17 @@ class QueryHandle:
         c0, h_lin = appx_hessian2(hnorm, k=10*rolls)
         return v + c0, gnorm + h_lin / 2
 
-    def eval_arti(self, a: artifact2.Artifact):
+    def eval_arti(self, a: artifact2.Artifact, est_dmg=False):
         self._set_query(a)
 
         c, m = self.linearize(a.substats, a.rolls_left)
         mu, var = coeff2normal(m, N=a.rolls_left, b=0)
+        if est_dmg:
+            return probdmg_gt(self.dmg0 - c, mu, var)
         return prob_gt(self.dmg0 - c, mu, var)
 
-    def _resolve_lpd(self, lpd, E=False):
-        if E:
+    def _resolve_lpd(self, lpd, est_dmg=False):
+        if est_dmg:
             ptot, dtot = 0, 0
             for l, (p, d) in lpd:
                 ptot += l*p
@@ -121,12 +123,12 @@ class QueryHandle:
             return ptot, dtot/ptot
         return np.sum(np.prod(lpd, axis=1))
 
-    def eval_sub(self, subs: Tuple[artifact2.ISubstat], p3sub=.8, E=False):
+    def eval_sub(self, subs: Sequence[artifact2.ISubstat], p3sub=.8, est_dmg=False):
         rolls_left = 5 + 4
         c, m = self.linearize(subs, rolls_left)
 
         def pd(mu, var):
-            if E:
+            if est_dmg:
                 return probdmg_gt(self.dmg0 - c, mu, var)
             return prob_gt(self.dmg0 - c, mu, var)
 
@@ -136,9 +138,9 @@ class QueryHandle:
 
         mu4, var4 = coeff2normal(m, N=4, b=1)
         lpd.append([1-p3sub, pd(mu4, var4)])
-        return self._resolve_lpd(lpd, E)
+        return self._resolve_lpd(lpd, est_dmg)
 
-    def eval_slot(self, slot, setKey=None, p3sub=.8, E=False):
+    def eval_slot(self, slot, setKey=None, p3sub=.8, est_dmg=False):
         if slot in slotnames:
             slot = slotmap[slot]
         main_distr = artifact2.mainstat[slot].distr
@@ -147,15 +149,17 @@ class QueryHandle:
         lpd = []
         for main, v_main in main_distr.items():
             p_main = v_main / main_denom
-            self._set_query(artifact2.Artifact(setKey=setKey, slotKey=slotnames[slot], mainStatKey=main))
+            self._set_query(artifact2.Artifact(
+                setKey=setKey, slotKey=slotnames[slot], mainStatKey=main))
 
             sub_distr = artifact2.substat
             sub_distr = sub_distr.remove(main)
             for c in itertools.combinations(sub_distr.k, 4):
-                prb = p_main * libarti_prob.p_subs(c, main)
+                prb = p_main * lookup_fns.p_subs(c, main)
                 c2 = tuple(artifact2.ISubstat(cc, 0) for cc in c)
-                lpd.append([prb, self.eval_sub(c2, p3sub=p3sub, E=E)])
-        return self._resolve_lpd(lpd, E)
+                lpd.append(
+                    [prb, self.eval_sub(c2, p3sub=p3sub, est_dmg=est_dmg)])
+        return self._resolve_lpd(lpd, est_dmg)
 
     # def dmg_per_arti(self, p3sub=.8):
     #     lpd = []
@@ -235,7 +239,11 @@ if __name__ == '__main__':
 
     curr_loadout = [flower, feather, sands, cup, hat]
     qh = QueryHandle(diona_stats, curr_loadout, dmg)
-    # print(qh.eval_arti(q1))
-    # print(qh.eval_arti(q2))
+    # print(qh.dmg0)
 
-    print(qh.eval_slot('circlet'))
+    tot = 0
+    for z in range(1000):
+        tot += qh.eval_arti(artifact2.make_arti(slot='plume'))
+    print(tot / 1000)
+
+    print(qh.eval_slot('plume'))

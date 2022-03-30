@@ -1,7 +1,7 @@
 import numpy as np
-from typing import Tuple
+from typing import Sequence
 
-from util.common import statnames, statmap
+from util.definitions import statnames, statmap, StatKey
 
 
 class DamageFormula:
@@ -12,7 +12,7 @@ class DamageFormula:
         else:
             self.formulae = funcs
 
-    def eval(self, stats) -> Tuple[float, np.ndarray, np.ndarray]:
+    def eval(self, stats) -> tuple[float, np.ndarray, np.ndarray]:
         dmg: float = 0
         grad: np.ndarray = 0
         hess: np.ndarray = 0
@@ -127,12 +127,18 @@ class VapeMelt(DamageFormula):
         super().__init__([f])
 
 class DmgBonus(DamageFormula):
-    def __init__(self, elem, bonus=0):
+    def __init__(self, elem: StatKey|Sequence[StatKey], flatbonus=0):
+        if isinstance(elem, str):
+            elem = [elem]
+
         def f(stats):
-            i = statmap[elem]
-            bon = stats[i]
+            bon = 0
             gr = np.zeros(len(statnames))
-            gr[i] = 1
             Hh = np.zeros([len(statnames), len(statnames)])
-            return 1 + bon + bonus, gr, Hh
+
+            for e in elem:
+                i = statmap[e]
+                bon += stats[i]
+                gr[i] = 1
+            return 1 + bon + flatbonus, gr, Hh
         super().__init__([f])
